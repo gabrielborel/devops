@@ -1,0 +1,33 @@
+### Listar produtos
+GET http://localhost:8080/api/produtos
+
+### Buscar produto
+GET http://localhost:8080/api/produtos/1
+
+### Criar produto
+POST http://localhost:8080/api/produtos
+Content-Type: application/json
+
+{
+  "nome": "Headset",
+  "descricao": "Headset USB",
+  "preco": 159.90,
+  "estoque": 10
+}
+
+### Atualizar produto
+PUT http://localhost:8080/api/produtos/1
+Content-Type: application/json
+
+{
+  "nome": "Teclado Mecânico Pro",
+  "descricao": "Teclado atualizado",
+  "preco": 299.90,
+  "estoque": 20
+}
+
+### Excluir produto
+DELETE http://localhost:8080/api/produtos/2
+
+### Health
+GET http://localhost:8080/actuator/health
