@@ -95,3 +95,35 @@ jobs:
         run: |
           echo "::error title=Erro de processamento simulado::Erro simulado na etapa de processamento do workflow!"
           exit 1
+
+  diagnosis:
+    needs: [validation, processing]
+    runs-on: ubuntu-24.04
+    if: ${{ failure() }}
+    name: "Relatório de falha da pipeline"
+
+    steps:
+      - name: diagnosis
+
+        run: |
+          echo "Falha simulada: $STAGE"
+
+          if [ "$CONFIG_JOB_RESULT" == 'failure' ]; then
+            echo "Falha durante a validação das configurações (job validation)."
+            echo "Verifique:"
+            echo "- a variável APP_NAME em Settings > Secrets and variables > Actions > Variables;"
+            echo "- o secret API_KEY em Settings > Secrets and variables > Actions > Secrets;"
+            echo "- o log do job validation, para ver qual step falhou."
+          elif [ "$PROCESSING_JOB_RESULT" == 'failure' ]; then
+            echo "Falha durante a etapa de processamento (job processing)."
+            echo "As configurações foram validadas com sucesso, então o problema está no processamento."
+            echo "Verifique o log do job processing para identificar o step que falhou."
+          else
+            echo "Falha não identificada pelo diagnóstico."
+            echo "Verifique os logs de cada job desta execução."
+          fi
+
+        env:
+          CONFIG_JOB_RESULT: ${{ needs.validation.result }}   
+          PROCESSING_JOB_RESULT: ${{ needs.processing.result }}   
+          STAGE: ${{ inputs.failure_stage || 'none' }}
