@@ -1,9 +1,12 @@
 name: run-monitor
 
+env:
+  WORKFLOW_NAME: "App Monitor"
+
 on:
   pull_request:
     branches:
-      - main # usando durante o desenvolvimento
+      - main 
 
 
   workflow_dispatch: 
@@ -19,11 +22,30 @@ on:
         - processing_stage
 
 jobs:
-  failure_stage:
+  validation:
     runs-on: ubuntu-24.04
+    name: "validation"
+    env:
+      JOB_NAME: "validation"
     steps:
       - run: |
-          echo "Failure stage: $STAGE"
+          echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
+          echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
+          echo "STAGE: ${STAGE:-indisponível neste escopo}"
         env:
-          STAGE: ${{ inputs.failure_stage }}
+          STAGE: ${{ inputs.failure_stage || 'none' }}
+      
+      - run: |
+          echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
+          echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
+          echo "STAGE: ${STAGE:-indisponível neste escopo}"
 
+  processing:
+    needs: [validation]
+    runs-on: ubuntu-24.04
+    name: "processing"
+    steps:
+      - run: |
+          echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
+          echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
+          echo "STAGE: ${STAGE:-indisponível neste escopo}"
