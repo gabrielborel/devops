@@ -1,0 +1,32 @@
+name: quality-control
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+
+jobs:
+  validate:
+    name: "Validação e compilação"
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: setup java
+        uses: actions/setup-java@v6
+        with: 
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: check java version
+        run: java --version
+
+      - name: validate
+        run: mvn compile
