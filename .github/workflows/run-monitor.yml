@@ -71,6 +71,12 @@ jobs:
         env:
           LOG_LEVEL: ${{ vars.LOG_LEVEL }}                  
 
+      - name: simulate error in config STAGE
+        if: ${{ inputs.failure_stage == 'config_stage' }}
+        run: |
+          echo "::error title=Erro de configuração simulado::Erro simulado na etapa de configuração do workflow!"
+          exit 1
+
   processing:
     needs: [validation]
     runs-on: ubuntu-24.04
@@ -80,3 +86,9 @@ jobs:
           echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
           echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
           echo "STAGE: ${STAGE:-indisponível neste escopo}"
+
+      - name: simulate error in processing STAGE
+        if: ${{ inputs.failure_stage == 'processing_stage' }}
+        run: |
+          echo "::error title=Erro de processamento simulado::Erro simulado na etapa de processamento do workflow!"
+          exit 1
