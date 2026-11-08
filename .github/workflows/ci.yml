@@ -96,5 +96,5 @@ jobs:
           | Validação e compilação | ${{ needs.validate.result }} |
           | Testes | ${{ needs.test.result }} |
           | Empacotamento | ${{ needs.package.result }} |
-          | Artefato | devops-crud-${{ github.sha }} |
+          | Artefato | ${{ needs.package.result == 'success' && format('devops-crud-{0}', github.sha) || 'não gerado' }} |
           EOF
