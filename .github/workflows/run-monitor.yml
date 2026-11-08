@@ -127,3 +127,30 @@ jobs:
           CONFIG_JOB_RESULT: ${{ needs.validation.result }}   
           PROCESSING_JOB_RESULT: ${{ needs.processing.result }}   
           STAGE: ${{ inputs.failure_stage || 'none' }}
+
+  summary:
+    name: "Relatório do pipeline"
+    if: ${{ always() }}
+    needs: [validation, processing, diagnosis]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: generate-report
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Resumo do App Monitor
+          
+          | Item | Valor |
+          |---|---|
+          | Aplicação | ${{ vars.APP_NAME }} |
+          | Branch | ${{ github.head_ref || github.ref_name }} |
+          | Commit | ${{ github.sha }} |
+          | Evento | ${{ github.event_name }} |
+          | Falha simulada | ${{ inputs.failure_stage || 'none' }} |
+          | Validação das configurações | ${{ needs.validation.result }} |
+          | Processamento | ${{ needs.processing.result }} |
+          | Diagnóstico | ${{ needs.diagnosis.result }} |
+          | Etapa com falha | ${{ needs.validation.result == 'failure' && 'validação' || needs.processing.result == 'failure' && 'processamento' || 'nenhuma' }} |
+          | LOG_LEVEL | ${{ vars.LOG_LEVEL || 'disabled' }} |
+          | API_KEY | ${{ secrets.API_KEY != '' && 'configurada' || 'ausente' }} |
+          EOF
