@@ -28,14 +28,16 @@ jobs:
     env:
       JOB_NAME: "validation"
     steps:
-      - run: |
+      - name: variables check
+        run: |
           echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
           echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
           echo "STAGE: ${STAGE:-indisponível neste escopo}"
         env:
           STAGE: ${{ inputs.failure_stage || 'none' }}
       
-      - run: |
+      - name: second variables check
+        run: |
           echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
           echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
           echo "STAGE: ${STAGE:-indisponível neste escopo}"
@@ -82,7 +84,8 @@ jobs:
     runs-on: ubuntu-24.04
     name: "processing"
     steps:
-      - run: |
+      - name: variables check
+        run: |
           echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
           echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
           echo "STAGE: ${STAGE:-indisponível neste escopo}"
