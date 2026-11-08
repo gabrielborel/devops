@@ -74,3 +74,27 @@ jobs:
         with:
           name: devops-crud-${{ github.sha }}
           path: "target/*.jar"
+  
+  summary:
+    name: "Monta o job summary"
+    if: ${{ always() }}
+    needs: [validate, test, package]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: generate-report
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Resumo do pipeline de CI
+
+          | Item | Valor |
+          |---|---|
+          | Aplicação | devops-crud |
+          | Branch | ${{ github.head_ref || github.ref_name }} |
+          | Commit | ${{ github.sha }} |
+          | Evento | ${{ github.event_name }} |
+          | Validação e compilação | ${{ needs.validate.result }} |
+          | Testes | ${{ needs.test.result }} |
+          | Empacotamento | ${{ needs.package.result }} |
+          | Artefato | devops-crud-${{ github.sha }} |
+          EOF
