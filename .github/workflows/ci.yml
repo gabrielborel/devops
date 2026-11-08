@@ -50,3 +50,27 @@ jobs:
       - name: run tests
         run: mvn test
     
+  package:
+    needs: [test]
+    name: "Realiza o empacotamento da aplicação"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: setup java
+        uses: actions/setup-java@v6
+        with: 
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: build app
+        run: mvn package -DskipTests=true
+
+      - name: upload generated files
+        uses: actions/upload-artifact@v7
+        with:
+          name: devops-crud-${{ github.sha }}
+          path: "target/*.jar"
