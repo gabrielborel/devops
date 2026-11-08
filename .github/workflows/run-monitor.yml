@@ -1,0 +1,29 @@
+name: run-monitor
+
+on:
+  pull_request:
+    branches:
+      - main # usando durante o desenvolvimento
+
+
+  workflow_dispatch: 
+    inputs:
+      failure_stage:
+        description: 'Provocar falha (none = nenhuma falha, config_stage = Falha de configuração, processing_stage = Falha de processamento)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+        - none
+        - config_stage
+        - processing_stage
+
+jobs:
+  failure_stage:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+          echo "Failure stage: $STAGE"
+        env:
+          STAGE: ${{ inputs.failure_stage }}
+
