@@ -76,7 +76,7 @@ jobs:
           path: "target/*.jar"
   
   summary:
-    name: "Monta o job summary"
+    name: "Relatório do pipeline"
     if: ${{ always() }}
     needs: [validate, test, package]
     runs-on: ubuntu-latest
