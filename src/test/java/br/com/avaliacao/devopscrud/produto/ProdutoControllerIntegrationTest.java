@@ -25,7 +25,7 @@ class ProdutoControllerIntegrationTest {
         mockMvc.perform(get("/api/produtos"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].id").exists());
+                .andExpect(jsonPath("$[5].id").exists());
     }
 
     @Test
