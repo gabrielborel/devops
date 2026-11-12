@@ -99,3 +99,6 @@ jobs:
           | Empacotamento | ${{ needs.package.result }} |
           | Artefato | ${{ needs.package.result == 'success' && format('devops-crud-{0}', github.sha) || 'não gerado' }} |
           EOF
+
+permissions:
+  contents: read
