@@ -13,7 +13,7 @@
 
     <groupId>br.com.avaliacao</groupId>
     <artifactId>devops-crud</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>devops-crud</name>
     <description>Projeto base para reavaliacao de DevOps</description>
 

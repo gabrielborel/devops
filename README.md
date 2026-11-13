@@ -21,7 +21,7 @@ mvn test
 mvn package
 
 # sobe a aplicação a partir do jar gerado, de acordo com a versão
-java -jar target/devops-crud-0.0.1-SNAPSHOT.jar
+java -jar target/devops-crud-1.0.0.jar
 ```
 ## Workflows
 
