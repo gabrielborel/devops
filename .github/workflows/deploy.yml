@@ -1,0 +1,89 @@
+name: application deploy
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  ci-workflow:
+    name: run CI workflow
+    uses: ./.github/workflows/ci.yml 
+
+  pre-deploy:
+    needs: [ci-workflow]
+    name: pre-deploy checks
+    runs-on: ubuntu-24.04
+    steps:
+      - name: validate APP_NAME
+        run: |
+          if [ -z "$APP_NAME" ]; then
+            echo "::error title=APP_NAME não existe::Variável APP_NAME ausente. Crie em Settings > Secrets and variables > Actions > aba Variables."
+            exit 1
+          fi
+          echo "APP_NAME = $APP_NAME" 
+        env: 
+          APP_NAME: ${{ vars.APP_NAME }}
+
+      - name: validate API_KEY
+        run: |
+          if [ -z "$API_KEY" ]; then
+            echo "::error title=API_KEY não existe::Secret API_KEY ausente. Crie em Settings > Secrets and variables > Actions > aba Secrets."
+            exit 1
+          fi
+          echo "API_KEY configurada." 
+        env: 
+          API_KEY: ${{ secrets.API_KEY }}
+
+  deploy:
+    needs: [pre-deploy]
+    name: deploy
+    runs-on: ubuntu-24.04
+    environment: production
+    env: 
+      PROD_DOMAIN: ${{ vars.PROD_DOMAIN }}
+    outputs:
+      DEPLOY_DOMAIN: ${{ steps.app-deploy.outputs.DEPLOY_DOMAIN }}
+    steps:
+      - name: validate PROD_DOMAIN
+        run: |
+          if [ -z "$PROD_DOMAIN" ]; then
+              echo "::error title=PROD_DOMAIN não existe::Variável PROD_DOMAIN ausente no environment production. Crie em Settings > Environments > production > Environment variables."
+              exit 1
+          fi
+          echo "PROD_DOMAIN configurada."
+
+      - name: deploy application
+        id: app-deploy
+        run: |
+          echo "Deploy simulado da aplicação para o ambiente production em https://$PROD_DOMAIN"
+          echo "DEPLOY_DOMAIN=$PROD_DOMAIN" >> "$GITHUB_OUTPUT"
+
+  summary:
+    name: "Relatório do pipeline de deploy"
+    if: ${{ always() }}
+    needs: [ci-workflow, pre-deploy, deploy]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: generate-report
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Resumo do Deploy
+
+          | Item | Valor |
+          |---|---|
+          | Aplicação | ${{ vars.APP_NAME }} |
+          | Branch | ${{ github.head_ref || github.ref_name }} |
+          | Commit | ${{ github.sha }} |
+          | Evento | ${{ github.event_name }} |
+          | CI | ${{ needs.ci-workflow.result }} |
+          | Pré-checagens | ${{ needs.pre-deploy.result }} |
+          | Deploy | ${{ needs.deploy.result }} |
+          | Ambiente | production |
+          | Domínio | ${{ needs.deploy.outputs.DEPLOY_DOMAIN || 'não disponível' }} |
+          | Etapa com falha | ${{ needs.ci-workflow.result == 'failure' && 'CI' || needs.pre-deploy.result == 'failure' && 'pré-checagens' || needs.deploy.result == 'failure' && 'deploy' || 'nenhuma' }} |
+          EOF

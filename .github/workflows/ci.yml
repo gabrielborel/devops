@@ -1,0 +1,104 @@
+name: quality-control
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: "Validação e compilação"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: setup java
+        uses: actions/setup-java@v6
+        with: 
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: check java version
+        run: java --version
+
+      - name: validate
+        run: mvn compile
+
+  test:
+    needs: [validate]
+    name: "Execução dos testes automatizados"
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: setup java
+        uses: actions/setup-java@v6
+        with: 
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      
+      - name: run tests
+        run: mvn test
+    
+  package:
+    needs: [test]
+    name: "Realiza o empacotamento da aplicação"
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: setup java
+        uses: actions/setup-java@v6
+        with: 
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: build app
+        run: mvn package -DskipTests=true
+
+      - name: upload generated files
+        uses: actions/upload-artifact@v7
+        with:
+          name: devops-crud-${{ github.sha }}
+          path: "target/*.jar"
+  
+  summary:
+    name: "Relatório do pipeline"
+    if: ${{ always() }}
+    needs: [validate, test, package]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: generate-report
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Resumo do pipeline de CI
+
+          | Item | Valor |
+          |---|---|
+          | Aplicação | devops-crud |
+          | Branch | ${{ github.head_ref || github.ref_name }} |
+          | Commit | ${{ github.sha }} |
+          | Evento | ${{ github.event_name }} |
+          | Validação e compilação | ${{ needs.validate.result }} |
+          | Testes | ${{ needs.test.result }} |
+          | Empacotamento | ${{ needs.package.result }} |
+          | Artefato | ${{ needs.package.result == 'success' && format('devops-crud-{0}', github.sha) || 'não gerado' }} |
+          EOF

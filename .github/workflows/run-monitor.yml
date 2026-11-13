@@ -1,0 +1,158 @@
+name: run-monitor
+
+env:
+  WORKFLOW_NAME: "App Monitor"
+
+on:
+  pull_request:
+    branches:
+      - main 
+
+
+  workflow_dispatch: 
+    inputs:
+      failure_stage:
+        description: 'Provocar falha (none = nenhuma falha, config_stage = Falha de configuração, processing_stage = Falha de processamento)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+        - none
+        - config_stage
+        - processing_stage
+
+permissions: {}
+
+jobs:
+  validation:
+    runs-on: ubuntu-24.04
+    name: "validation"
+    env:
+      JOB_NAME: "validation"
+    steps:
+      - name: variables check
+        run: |
+          echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
+          echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
+          echo "STAGE: ${STAGE:-indisponível neste escopo}"
+        env:
+          STAGE: ${{ inputs.failure_stage || 'none' }}
+      
+      - name: second variables check
+        run: |
+          echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
+          echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
+          echo "STAGE: ${STAGE:-indisponível neste escopo}"
+
+      - name: validate APP_NAME
+        run: |
+          if [ -z "$APP_NAME" ]; then
+            echo "::error title=APP_NAME não existe::Variável APP_NAME faltando, crie no repositório do projeto no GitHub"
+            exit 1
+          fi
+          echo "APP_NAME = $APP_NAME" 
+          
+        env: 
+          APP_NAME: ${{ vars.APP_NAME }}
+
+      - name: validate API_KEY
+        run: |
+          if [ -z "$API_KEY" ]; then
+            echo "::error title=API_KEY não existe::Secret API_KEY faltando, crie no repositório do projeto no GitHub"
+            exit 1
+          fi
+          echo "API_KEY configurada." 
+        
+        env: 
+          API_KEY: ${{ secrets.API_KEY }}
+
+      - name: validate LOG_LEVEL
+        run: |
+          if [ -z "$LOG_LEVEL" ]; then
+            echo "::warning title=LOG_LEVEL não existe::Variável LOG_LEVEL faltando, logs estão desabilitados"
+          fi
+          echo LOG_LEVEL="${LOG_LEVEL:-disabled}"
+        env:
+          LOG_LEVEL: ${{ vars.LOG_LEVEL }}                  
+
+      - name: simulate error in config STAGE
+        if: ${{ inputs.failure_stage == 'config_stage' }}
+        run: |
+          echo "::error title=Erro de configuração simulado::Erro simulado na etapa de configuração do workflow!"
+          exit 1
+
+  processing:
+    needs: [validation]
+    runs-on: ubuntu-24.04
+    name: "processing"
+    steps:
+      - name: variables check
+        run: |
+          echo "WORKFLOW_NAME: ${WORKFLOW_NAME:-indisponível neste escopo}"
+          echo "JOB_NAME: ${JOB_NAME:-indisponível neste escopo}"
+          echo "STAGE: ${STAGE:-indisponível neste escopo}"
+
+      - name: simulate error in processing STAGE
+        if: ${{ inputs.failure_stage == 'processing_stage' }}
+        run: |
+          echo "::error title=Erro de processamento simulado::Erro simulado na etapa de processamento do workflow!"
+          exit 1
+
+  diagnosis:
+    needs: [validation, processing]
+    runs-on: ubuntu-24.04
+    if: ${{ failure() }}
+    name: "Relatório de falha da pipeline"
+
+    steps:
+      - name: diagnosis
+
+        run: |
+          echo "Falha simulada: $STAGE"
+
+          if [ "$CONFIG_JOB_RESULT" == 'failure' ]; then
+            echo "Falha durante a validação das configurações (job validation)."
+            echo "Verifique:"
+            echo "- a variável APP_NAME em Settings > Secrets and variables > Actions > Variables;"
+            echo "- o secret API_KEY em Settings > Secrets and variables > Actions > Secrets;"
+            echo "- o log do job validation, para ver qual step falhou."
+          elif [ "$PROCESSING_JOB_RESULT" == 'failure' ]; then
+            echo "Falha durante a etapa de processamento (job processing)."
+            echo "As configurações foram validadas com sucesso, então o problema está no processamento."
+            echo "Verifique o log do job processing para identificar o step que falhou."
+          else
+            echo "Falha não identificada pelo diagnóstico."
+            echo "Verifique os logs de cada job desta execução."
+          fi
+
+        env:
+          CONFIG_JOB_RESULT: ${{ needs.validation.result }}   
+          PROCESSING_JOB_RESULT: ${{ needs.processing.result }}   
+          STAGE: ${{ inputs.failure_stage || 'none' }}
+
+  summary:
+    name: "Relatório do pipeline"
+    if: ${{ always() }}
+    needs: [validation, processing, diagnosis]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: generate-report
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Resumo do App Monitor
+          
+          | Item | Valor |
+          |---|---|
+          | Aplicação | ${{ vars.APP_NAME }} |
+          | Branch | ${{ github.head_ref || github.ref_name }} |
+          | Commit | ${{ github.sha }} |
+          | Evento | ${{ github.event_name }} |
+          | Falha simulada | ${{ inputs.failure_stage || 'none' }} |
+          | Validação das configurações | ${{ needs.validation.result }} |
+          | Processamento | ${{ needs.processing.result }} |
+          | Diagnóstico | ${{ needs.diagnosis.result }} |
+          | Etapa com falha | ${{ needs.validation.result == 'failure' && 'validação' || needs.processing.result == 'failure' && 'processamento' || 'nenhuma' }} |
+          | LOG_LEVEL | ${{ vars.LOG_LEVEL || 'disabled' }} |
+          | API_KEY | ${{ secrets.API_KEY != '' && 'configurada' || 'ausente' }} |
+          EOF
