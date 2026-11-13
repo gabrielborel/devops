@@ -5,6 +5,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   ci-workflow:
     name: run CI workflow
@@ -84,6 +87,3 @@ jobs:
           | Domínio | ${{ needs.deploy.outputs.DEPLOY_DOMAIN || 'não disponível' }} |
           | Etapa com falha | ${{ needs.ci-workflow.result == 'failure' && 'CI' || needs.pre-deploy.result == 'failure' && 'pré-checagens' || needs.deploy.result == 'failure' && 'deploy' || 'nenhuma' }} |
           EOF
-
-permissions:
-  contents: read

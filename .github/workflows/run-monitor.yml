@@ -21,6 +21,8 @@ on:
         - config_stage
         - processing_stage
 
+permissions: {}
+
 jobs:
   validation:
     runs-on: ubuntu-24.04
@@ -154,5 +156,3 @@ jobs:
           | LOG_LEVEL | ${{ vars.LOG_LEVEL || 'disabled' }} |
           | API_KEY | ${{ secrets.API_KEY != '' && 'configurada' || 'ausente' }} |
           EOF
-
-permissions: {}
